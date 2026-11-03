@@ -5,30 +5,31 @@ import java.util.*;
 import static org.example.Util.printIndividualItem;
 import static org.example.Util.printTally;
 
-public class BillThing {
-    private static Map<String, Object> make(String n, double p, boolean f, boolean i2, int q) {
-        Map<String, Object> m = new HashMap<>();
-        m.put("n", n);
-        m.put("p", p);
-        m.put("f", f);
-        m.put("i2", i2);
-        m.put("q", q);
-        return m;
+public class BillCalc {
+    private final String coupon = "SAVE10";
+
+    private static Map<String, Object> createProductMap(String name, double price, boolean f, boolean i2, int quantity) {
+        Map<String, Object> productMap = new HashMap<>();
+        productMap.put("n", name);
+        productMap.put("p", price);
+        productMap.put("f", f);
+        productMap.put("i2", i2);
+        productMap.put("q", quantity);
+        return productMap;
     }
 
     public void calculate(boolean w, boolean vip) {
         List<Map<String, Object>> items = new ArrayList<>();
-        items.add(make("Book", 12.49, false, false, 1));
-        items.add(make("Music CD", 14.99, false, true, 2));
-        items.add(make("Headache pills", 9.75, true, false, 3));
-        items.add(make("Chocolate bar", 0.85, true, true, 5));
+        items.add(createProductMap("Book", 12.49, false, false, 1));
+        items.add(createProductMap("Music CD", 14.99, false, true, 2));
+        items.add(createProductMap("Headache pills", 9.75, true, false, 3));
+        items.add(createProductMap("Chocolate bar", 0.85, true, true, 5));
 
         double total = 0;
         double taxes = 0;
 
         // loyalty stuff
         int pts = 0;
-        String c = "SAVE10";
 
         double savd = 0; // saved amount
 
@@ -41,17 +42,13 @@ public class BillThing {
             if (i2) {
                 t += p * 0.10;
                 if (p > 15) {
-                    if (i2) {
-                        t += p * 0.02;
-                    }
+                    t += p * 0.02;
                 }
             }
             if (!f) {
                 t += p * 0.05;
                 if (w) {
-                    if (!f) {
-                        t += p * 0.01;
-                    }
+                    t += p * 0.01;
                 }
             }
             double finalPrice = (p + t) * q;
@@ -73,17 +70,16 @@ public class BillThing {
             }
 
             // bulk discount
-            if (q > 1) {
-                if (q >= 3) {
-                    if (q >= 5) {
-                        finalPrice = finalPrice * 0.85;
-                    } else {
-                        finalPrice = finalPrice * 0.90;
-                    }
+            if (q >= 3) {
+                if (q >= 5) {
+                    finalPrice = finalPrice * 0.85;
                 } else {
-                    finalPrice = finalPrice * 0.95;
+                    finalPrice = finalPrice * 0.90;
                 }
+            } else {
+                finalPrice = finalPrice * 0.95;
             }
+        
 
             savd += (origPrice - finalPrice);
             total += finalPrice;

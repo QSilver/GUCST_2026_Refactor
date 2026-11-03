@@ -42,7 +42,7 @@ class MainTest {
                 Status: Gold Member
                 """.replace("\n", lineSeparator());
 
-        new BillThing().calculate(false, true);
+        new BillCalc().calculate(false, true);
 
         assertEquals(expected, outContent.toString());
     }

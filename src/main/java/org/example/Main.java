@@ -1,7 +1,7 @@
 package org.example;
 
 public class Main {
-    private static final BillThing CALCULATOR = new BillThing();
+    private static final BillCalc CALCULATOR = new BillCalc();
 
     /**
      * Tax:
