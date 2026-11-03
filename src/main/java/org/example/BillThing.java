@@ -14,7 +14,23 @@ public class BillThing {
         m.put("i2", i2);
         m.put("q", q);
         return m;
+
+        double total = 0;
+        double taxes = 0;
+
+        int pts = 0;
+        String discountCode = "SAVE10";
+
+        double savd = 0; // saved amount
+
+        double finalPrice = (p + t) * q;
+        double origPrice = finalPrice;
+
+        float highBulkDiscount = 0.85
+        float mediumBulkDiscount = 0.90
+        float lowBulkDiscount = 0.95
     }
+    
 
     public void calculate(boolean w, boolean vip) {
         List<Map<String, Object>> items = new ArrayList<>();
@@ -23,15 +39,32 @@ public class BillThing {
         items.add(make("Headache pills", 9.75, true, false, 3));
         items.add(make("Chocolate bar", 0.85, true, true, 5));
 
-        double total = 0;
-        double taxes = 0;
+        savd += (origPrice - finalPrice);
+        total += finalPrice;
+        taxes += t * q;
+        priceCalculation();
+        loyaltyCalculation(boolean vip, double finalPrice, int pts);
+        priceCalculation();
+        discount(int p, boolean f, boolean vip, double finalPrice);
+        bulkDiscount(int q, double finalPrice);
+        
 
-        // loyalty stuff
-        int pts = 0;
-        String c = "SAVE10";
+        
+    public void loyaltyCalculation(boolean vip, double finalPrice, int pts){
+                    if (vip) {
+                pts += (int)(finalPrice * 2);
+                if (pts > 100) {
+                    pts += 10;
+                }
+            } else {
+                pts += (int)finalPrice;
+                if (pts > 100) {
+                    pts += 10;
+                }
+            }}
 
-        double savd = 0; // saved amount
 
+    public void priceCalculation(){
         for (Map<String, Object> i : items) {
             double p = (double) i.get("p");
             boolean f = (boolean) i.get("f");
@@ -53,54 +86,37 @@ public class BillThing {
                         t += p * 0.01;
                     }
                 }
-            }
-            double finalPrice = (p + t) * q;
-            double origPrice = finalPrice;
+            }}
 
-            // discounts
+    public void discount(int p, boolean f, boolean vip, double finalPrice){
             if (p > 10 && !f) {
                 finalPrice -= 1.0 * q;
-                if (vip) {
-                    if (p > 10) {
+                if (vip && (p > 10)) {
                         finalPrice -= 0.5 * q;
-                        if (i2) {
-                            if (vip) {
+                        if (i2 && (vip) ) {
                                 finalPrice -= 0.25 * q;
                             }
                         }
-                    }
-                }
-            }
+                    }}
+            
 
-            // bulk discount
+    public void bulkDiscount(int q, double finalPrice){
             if (q > 1) {
                 if (q >= 3) {
                     if (q >= 5) {
-                        finalPrice = finalPrice * 0.85;
+                        finalPrice = finalPrice * highBulkDiscount;
                     } else {
-                        finalPrice = finalPrice * 0.90;
+                        finalPrice = finalPrice * mediumBulkDiscount;
                     }
                 } else {
-                    finalPrice = finalPrice * 0.95;
+                    finalPrice = finalPrice * lowBulkDiscount;
                 }
-            }
+            }}
 
-            savd += (origPrice - finalPrice);
-            total += finalPrice;
-            taxes += t * q;
 
-            // loyalty points
-            if (vip) {
-                pts += (int)(finalPrice * 2);
-                if (pts > 100) {
-                    pts += 10;
-                }
-            } else {
-                pts += (int)finalPrice;
-                if (pts > 100) {
-                    pts += 10;
-                }
-            }
+
+
+
 
             printIndividualItem((String) i.get("n"), q, finalPrice);
         }
