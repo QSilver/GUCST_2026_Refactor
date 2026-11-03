@@ -1,109 +1,122 @@
 package org.example;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.example.Util.printIndividualItem;
 import static org.example.Util.printTally;
 
 public class BillThing {
-    private static Map<String, Object> make(String n, double p, boolean f, boolean i2, int q) {
-        Map<String, Object> m = new HashMap<>();
-        m.put("n", n);
-        m.put("p", p);
-        m.put("f", f);
-        m.put("i2", i2);
-        m.put("q", q);
-        return m;
+    private static final double BASIC_TAX_RATE = 0.05;
+    private static final double WEEKEND_TAX_RATE = 0.01;
+    private static final double IMPORT_TAX_RATE = 0.10;
+    private static final double ADDITIONAL_IMPORT_TAX_RATE = 0.02;
+    private static final double DISCOUNT_THRESHOLD = 10.0;
+    private static final double STANDARD_ITEM_DISCOUNT = 1.0;
+    private static final double VIP_ITEM_DISCOUNT = 0.50;
+    private static final double VIP_IMPORT_DISCOUNT = 0.25;
+    private static final double QUANTITY_TWO_DISCOUNT = 0.95;
+    private static final double QUANTITY_THREE_DISCOUNT = 0.90;
+    private static final double QUANTITY_FIVE_DISCOUNT = 0.85;
+    private static final int LOYALTY_POINT_BONUS_THRESHOLD = 100;
+    private static final int LOYALTY_POINT_BONUS = 10;
+
+    private static Product product(String name, double unitPrice, boolean food,
+                                   boolean imported, int quantity) {
+        return new Product(name, unitPrice, food, imported, quantity);
     }
 
-    public void calculate(boolean w, boolean vip) {
-        List<Map<String, Object>> items = new ArrayList<>();
-        items.add(make("Book", 12.49, false, false, 1));
-        items.add(make("Music CD", 14.99, false, true, 2));
-        items.add(make("Headache pills", 9.75, true, false, 3));
-        items.add(make("Chocolate bar", 0.85, true, true, 5));
+    public void calculate(boolean weekend, boolean vip) {
+        List<Product> products = createProducts();
 
-        double total = 0;
-        double taxes = 0;
+        double totalPrice = 0;
+        double totalTax = 0;
+        double totalSaved = 0;
+        int loyaltyPoints = 0;
 
-        // loyalty stuff
-        int pts = 0;
-        String c = "SAVE10";
+        for (Product product : products) {
+            double tax = calculateTax(product, weekend);
+            double originalPrice = (product.unitPrice() + tax) * product.quantity();
+            double finalPrice = applyDiscounts(product, originalPrice, vip);
 
-        double savd = 0; // saved amount
+            totalSaved += originalPrice - finalPrice;
+            totalPrice += finalPrice;
+            totalTax += tax * product.quantity();
+            loyaltyPoints = calculateLoyaltyPoints(loyaltyPoints, finalPrice, vip);
 
-        for (Map<String, Object> i : items) {
-            double p = (double) i.get("p");
-            boolean f = (boolean) i.get("f");
-            boolean i2 = (boolean) i.get("i2");
-            int q = (int) i.get("q");
-            double t = 0;
-            if (i2) {
-                t += p * 0.10;
-                if (p > 15) {
-                    if (i2) {
-                        t += p * 0.02;
-                    }
-                }
-            }
-            if (!f) {
-                t += p * 0.05;
-                if (w) {
-                    if (!f) {
-                        t += p * 0.01;
-                    }
-                }
-            }
-            double finalPrice = (p + t) * q;
-            double origPrice = finalPrice;
-
-            // discounts
-            if (p > 10 && !f) {
-                finalPrice -= 1.0 * q;
-                if (vip) {
-                    if (p > 10) {
-                        finalPrice -= 0.5 * q;
-                        if (i2) {
-                            if (vip) {
-                                finalPrice -= 0.25 * q;
-                            }
-                        }
-                    }
-                }
-            }
-
-            // bulk discount
-            if (q > 1) {
-                if (q >= 3) {
-                    if (q >= 5) {
-                        finalPrice = finalPrice * 0.85;
-                    } else {
-                        finalPrice = finalPrice * 0.90;
-                    }
-                } else {
-                    finalPrice = finalPrice * 0.95;
-                }
-            }
-
-            savd += (origPrice - finalPrice);
-            total += finalPrice;
-            taxes += t * q;
-
-            // loyalty points
-            if (vip) {
-                pts += (int)(finalPrice * 2);
-                if (pts > 100) {
-                    pts += 10;
-                }
-            } else {
-                pts += (int)finalPrice;
-                if (pts > 100) {
-                    pts += 10;
-                }
-            }
-
-            printIndividualItem((String) i.get("n"), q, finalPrice);
+            printIndividualItem(product.name(), product.quantity(), finalPrice);
         }
-        printTally(taxes, total, savd, pts);
+        printTally(totalTax, totalPrice, totalSaved, loyaltyPoints);
+    }
+
+    private List<Product> createProducts() {
+        List<Product> products = new ArrayList<>();
+        products.add(product("Book", 12.49, false, false, 1));
+        products.add(product("Music CD", 14.99, false, true, 2));
+        products.add(product("Headache pills", 9.75, true, false, 3));
+        products.add(product("Chocolate bar", 0.85, true, true, 5));
+        return products;
+    }
+
+    private double calculateTax(Product product, boolean weekend) {
+        double tax = 0;
+        if (product.imported()) {
+            tax += product.unitPrice() * IMPORT_TAX_RATE;
+            if (product.unitPrice() > 15) {
+                tax += product.unitPrice() * ADDITIONAL_IMPORT_TAX_RATE;
+            }
+        }
+        if (!product.food()) {
+            tax += product.unitPrice() * BASIC_TAX_RATE;
+            if (weekend) {
+                tax += product.unitPrice() * WEEKEND_TAX_RATE;
+            }
+        }
+        return tax;
+    }
+
+    private double applyDiscounts(Product product, double originalPrice, boolean vip) {
+        double discountedPrice = applyItemDiscount(product, originalPrice, vip);
+        return applyQuantityDiscount(discountedPrice, product.quantity());
+    }
+
+    private double applyItemDiscount(Product product, double price, boolean vip) {
+        if (product.food() || product.unitPrice() <= DISCOUNT_THRESHOLD) {
+            return price;
+        }
+
+        double discountedPrice = price - STANDARD_ITEM_DISCOUNT * product.quantity();
+        if (vip) {
+            discountedPrice -= VIP_ITEM_DISCOUNT * product.quantity();
+            if (product.imported()) {
+                discountedPrice -= VIP_IMPORT_DISCOUNT * product.quantity();
+            }
+        }
+        return discountedPrice;
+    }
+
+    private double applyQuantityDiscount(double price, int quantity) {
+        if (quantity >= 5) {
+            return price * QUANTITY_FIVE_DISCOUNT;
+        }
+        if (quantity >= 3) {
+            return price * QUANTITY_THREE_DISCOUNT;
+        }
+        if (quantity == 2) {
+            return price * QUANTITY_TWO_DISCOUNT;
+        }
+        return price;
+    }
+
+    private int calculateLoyaltyPoints(int currentPoints, double finalPrice, boolean vip) {
+        int pointsEarned = vip ? (int) (finalPrice * 2) : (int) finalPrice;
+        int updatedPoints = currentPoints + pointsEarned;
+        return updatedPoints > LOYALTY_POINT_BONUS_THRESHOLD
+                ? updatedPoints + LOYALTY_POINT_BONUS
+                : updatedPoints;
+    }
+
+    private record Product(String name, double unitPrice, boolean food,
+                           boolean imported, int quantity) {
     }
 }
