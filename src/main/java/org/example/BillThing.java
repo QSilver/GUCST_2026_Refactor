@@ -20,7 +20,8 @@ public class BillThing {
     private static final int LOYALTY_BONUS_THRESHOLD = 100;
     private static final int LOYALTY_BONUS_POINTS = 10;
 
-    private static Map<String, Object> makeItem(String name, double price, boolean taxExempt, boolean imported, int quantity) {
+    private static Map<String, Object> makeItem(String name, double price, boolean taxExempt, boolean imported,
+            int quantity) {
         Map<String, Object> item = new HashMap<>();
         item.put("name", name);
         item.put("price", price);
@@ -56,6 +57,7 @@ public class BillThing {
 
             printIndividualItem((String) item.get("name"), quantity, finalPrice);
         }
+
         printTally(taxes, total, saved, loyaltyPoints);
     }
 
@@ -76,12 +78,14 @@ public class BillThing {
                 tax += price * LUXURY_IMPORT_SURCHARGE_RATE;
             }
         }
+
         if (!taxExempt) {
             tax += price * BASIC_SALES_TAX_RATE;
             if (isWeekend) {
                 tax += price * WEEKEND_SURCHARGE_RATE;
             }
         }
+
         return tax;
     }
 
@@ -106,6 +110,7 @@ public class BillThing {
                 discountPerUnit += VIP_IMPORTED_DISCOUNT_PER_UNIT;
             }
         }
+
         return priceBeforeDiscounts - discountPerUnit * quantity;
     }
 
@@ -117,15 +122,20 @@ public class BillThing {
         } else if (quantity > 1) {
             return price * 0.95;
         }
+
         return price;
     }
 
-    /** VIPs earn double points; once the running total exceeds 100, each item earns a bonus. */
+    /**
+     * VIPs earn double points; once the running total exceeds 100, each item earns
+     * a bonus.
+     */
     private static int addLoyaltyPoints(int currentPoints, double finalPrice, boolean vip) {
         int points = currentPoints + (int) (vip ? finalPrice * 2 : finalPrice);
         if (points > LOYALTY_BONUS_THRESHOLD) {
             points += LOYALTY_BONUS_POINTS;
         }
+
         return points;
     }
 }
