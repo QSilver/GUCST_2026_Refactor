@@ -5,18 +5,30 @@ import java.util.*;
 import static org.example.Util.printIndividualItem;
 import static org.example.Util.printTally;
 
+
 public class BillThing {
-    private static Map<String, Object> make(String n, double p, boolean f, boolean i2, int q) {
+
+    public static final float SALES_TAX_WEEKDAYS = 0.05;
+    public static final float SALES_TAX_WEEKEND = 0.01;
+    public static final float IMPORT_TAX = 0.1;
+    public static final float EXTRA_IMPORT_TAX = 0.02;
+
+    public static final float BASE_MONEY_OFF = 1;
+    public static final float DISCOUNT_THRESHOLD = 10;
+    public static final float VIP_MONEY_OFF = 0.5;
+    public static final float VIP_MONEY_OFF_IMPORT = 0.25;
+
+    private static Map<String, Object> make(String name, double price, boolean isFood, boolean isImported, int quantity) {
         Map<String, Object> m = new HashMap<>();
-        m.put("n", n);
-        m.put("p", p);
-        m.put("f", f);
-        m.put("i2", i2);
-        m.put("q", q);
+        m.put("name", name);
+        m.put("price", price);
+        m.put("isFood", isFood);
+        m.put("isImported", isImported);
+        m.put("quantity", quantity);
         return m;
     }
 
-    public void calculate(boolean w, boolean vip) {
+    public void calculate(boolean isWeekend, boolean isVIP) {
         List<Map<String, Object>> items = new ArrayList<>();
         items.add(make("Book", 12.49, false, false, 1));
         items.add(make("Music CD", 14.99, false, true, 2));
@@ -27,45 +39,45 @@ public class BillThing {
         double taxes = 0;
 
         // loyalty stuff
-        int pts = 0;
-        String c = "SAVE10";
+        int loyaltyPts = 0;
+        String discountCode = "SAVE10";
 
         double savd = 0; // saved amount
 
         for (Map<String, Object> i : items) {
-            double p = (double) i.get("p");
-            boolean f = (boolean) i.get("f");
-            boolean i2 = (boolean) i.get("i2");
-            int q = (int) i.get("q");
-            double t = 0;
-            if (i2) {
-                t += p * 0.10;
-                if (p > 15) {
-                    if (i2) {
-                        t += p * 0.02;
+            double price = (double) i.get("price");
+            boolean isFood = (boolean) i.get("isFood");
+            boolean isImported = (boolean) i.get("isImported");
+            int quantity = (int) i.get("quantity");
+            double tax = 0;
+            if (isImported) {
+                tax += price * IMPORT_TAX;
+                if (price > 15) {
+                    if (isImported) {
+                        tax += price * EXTRA_IMPORT_TAX;
                     }
                 }
             }
-            if (!f) {
-                t += p * 0.05;
-                if (w) {
-                    if (!f) {
-                        t += p * 0.01;
+            if (!isFood) {
+                tax += price * SALES_TAX_WEEKDAYS;
+                if (isWeekend) {
+                    if (!isFood) {
+                        tax += price * SALES_TAX_WEEKEND;
                     }
                 }
             }
-            double finalPrice = (p + t) * q;
+            double finalPrice = (price + tax) * quantity;
             double origPrice = finalPrice;
 
             // discounts
-            if (p > 10 && !f) {
-                finalPrice -= 1.0 * q;
-                if (vip) {
-                    if (p > 10) {
-                        finalPrice -= 0.5 * q;
-                        if (i2) {
-                            if (vip) {
-                                finalPrice -= 0.25 * q;
+            if (price > 10 && !isFood) {
+                finalPrice -= BASE_MONEY_OFF * quantity;
+                if (isVIP) {
+                    if (price > DISCOUNT_THRESHOLD) {
+                        finalPrice -= VIP_MONEY_OFF * quantity;
+                        if (isImported) {
+                            if (isVIP) {
+                                finalPrice -= VIP_MONEY_OFF_IMPORT * quantity;
                             }
                         }
                     }
@@ -73,9 +85,9 @@ public class BillThing {
             }
 
             // bulk discount
-            if (q > 1) {
-                if (q >= 3) {
-                    if (q >= 5) {
+            if (quantity > 1) {
+                if (quantity >= 3) {
+                    if (quantity >= 5) {
                         finalPrice = finalPrice * 0.85;
                     } else {
                         finalPrice = finalPrice * 0.90;
@@ -87,23 +99,23 @@ public class BillThing {
 
             savd += (origPrice - finalPrice);
             total += finalPrice;
-            taxes += t * q;
+            taxes += tax * quantity;
 
             // loyalty points
-            if (vip) {
-                pts += (int)(finalPrice * 2);
-                if (pts > 100) {
-                    pts += 10;
+            if (isVIP) {
+                loyaltyPts += (int)(finalPrice * 2);
+                if (loyaltyPts > 100) {
+                    loyaltyPts += 10;
                 }
             } else {
-                pts += (int)finalPrice;
-                if (pts > 100) {
-                    pts += 10;
+                loyaltyPts += (int)finalPrice;
+                if (loyaltyPts > 100) {
+                    loyaltyPts += 10;
                 }
             }
 
-            printIndividualItem((String) i.get("n"), q, finalPrice);
+            printIndividualItem((String) i.get("name"), quantity, finalPrice);
         }
-        printTally(taxes, total, savd, pts);
+        printTally(taxes, total, savd, loyaltyPts);
     }
 }
